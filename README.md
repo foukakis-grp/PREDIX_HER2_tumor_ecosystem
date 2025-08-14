@@ -5,7 +5,9 @@
 ## data: processed data.
 
 
-# AI-EPI
+# Multi-omics metrics
+
+
 Malignant epithelial cells are the most heterogeneous cell type with almost every patient forming a separate cluster. Here, we present a method, AI-EPI (**A**tlas-level **I**ntegrated **E**pithelial **P**rogram **I**dentification), which identify patient-shared and patient-specific gene modules (GM) simultaneously and efficiently.The
 method mainly contains two steps:
 
