@@ -18,15 +18,18 @@ method mainly contains two steps:
 <img src="./inst/workflow.png" alt="workflow.png">
 </div> 
 
-Installation
+nf-core workflow
 ------------
 
-the package can be installed directly from the github.
+The nf-core pipelines can be set up based on: https://nf-co.re/pipelines/
 
 ```
-git clone Juliebaker1/AIEPI
-cd AIEPI
-pip install requirement.txt
+# Launch the RNAseq pipeline
+nextflow run nf-core/rnaseq \
+    --input samplesheet.csv \
+    --output ./results/ \
+    --genome GRCh38 \
+    -profile singularity
 ```
 
 Quick start
