@@ -17,7 +17,7 @@ method mainly contains two steps:
 -   code for figure
 
 <div align=center> 
-<img src="./inst/workflow.png" alt="workflow.png">
+<img src="./Source/predix her2 trial.png.png" alt="predix her2 trial.png.png">
 </div> 
 
 nf-core workflow
