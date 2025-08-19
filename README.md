@@ -1,5 +1,9 @@
 # PREDIX HER2 trial tumor ecosystem
 
+<div align=center> 
+<img src="./inst/workflow.png" alt="workflow.png">
+</div> 
+
 This repository contains codes to perform analysis for the manuscript titled "Multi-omic Profiling Reveals Predictive Biomarkers of Response to Antibody-Drug Conjugates in HER2-Positive Breast Cancer".
 
 # Multi-omics metrics
