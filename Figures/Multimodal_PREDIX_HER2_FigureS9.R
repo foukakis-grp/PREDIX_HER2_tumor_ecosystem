@@ -201,44 +201,7 @@ sunburst(tree, width="100%", height=400)
 
 
 
-library(forestplot)
-source("E:/Projects/PREDIX_HER2/Multimodal/Code/Logistic_batch.R")
-data=readRDS("E:/Projects/PREDIX_HER2/Multimodal/Data/TME_subtype/pheno_immune_multiomics.rds")
-variable=c("A01","A03","B44","B07")
-data=data[!is.na(data$A01),]
-results=Logistic_batch_adjER(data,"pCR","Arm",variable,"ER")%>%as.data.frame()
-results=results[results$biomarker%in%variable,]
-Total=results[,c("biomarker","whole_OR","Whole_LCI","Whole_UCI","whole_lr_p")]
-Total$group="All"
-Total$FDR=p.adjust(Total$whole_lr_p, method = "BH")
-DHP=results[,c("biomarker","DHP_OR","DHP_LCI","DHP_UCI","DHP_lr_p")]
-DHP$group="DHP"
-DHP$FDR=p.adjust(DHP$DHP_lr_p, method = "BH")
-TDM1=results[,c("biomarker","TDM1_OR","TDM1_LCI","TDM1_UCI","TDM1_lr_p")]
-TDM1$group="T-DM1"
-TDM1$FDR=p.adjust(TDM1$TDM1_lr_p, method = "BH")
-colname=c("biomarker","OR","LCI","UCI","p","group","FDR")
-colnames(Total)=colname;colnames(DHP)=colname;colnames(TDM1)=colname
-df=rbind(Total,DHP,TDM1)
-df$biomarker=gsub("coding_mutation_", "",df$biomarker)
-#df$biomarker=gsub("_oncokb", "",df$biomarker)
-biomarker=df$biomarker
-df$OR=as.numeric(df$OR);df$LCI=as.numeric(df$LCI);df$UCI=as.numeric(df$UCI)
-#
-df |>
-  group_by(group) |>
-  forestplot(labeltext=biomarker,
-             mean=OR,lower=LCI,upper=UCI,
-             zero = 1,
-             boxsize = .25, # We set the box size to better visualize the type
-             line.margin = .1, # We need to add this to avoid crowding
-             lty.ci = c(3),
-             clip = c(0,8),xlab = " OR with 95% CI") |> 
-  fp_add_lines("black") |> 
-  fp_add_header("HLA Supertype") |> 
-  fp_set_style(box = c("#e5c06e", "#8491B4FF","#91D1C2FF") |> lapply(function(x) gpar(fill = x, col = "black")),
-               default = gpar(vertices = TRUE)) |> 
-  fp_set_zebra_style("#F5F9F9")
+
 
 
 

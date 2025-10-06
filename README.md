@@ -1,12 +1,31 @@
-# PREDIX HER2 trial tumor ecosystem
+# This repository contains codes to perform analysis for the manuscript titled "Multi-omic Profiling Reveals Predictive Biomarkers of Response to Antibody-Drug Conjugates in HER2-Positive Breast Cancer".
 
-<div align=center> 
-<img src="./inst/workflow.png" alt="workflow.png">
-</div> 
+# PREDIX HER2 trial (Hatschek T et al; JAMA Oncol. 2021)
 
-This repository contains codes to perform analysis for the manuscript titled "Multi-omic Profiling Reveals Predictive Biomarkers of Response to Antibody-Drug Conjugates in HER2-Positive Breast Cancer".
+<div align="center">
+  <img src="./Resource/predixHER2.png" alt="predixHER2" width="500">
+</div>
+
+
+# Data pre-processing
+
+-   RNA-seq: nf-core ranseq
+-   WES: nf-core sarek, PureCN best practices
+-   CUT-seq: GATK copy number pipeline, GISTIC2.0
+-   Proteomics: 
+-   Xenium: Quality control, data integration
 
 # Multi-omics metrics
+
+-  RNA-seq: DEG, transcriptomic metrics
+-  WES: genomic metrics
+-  Proteogenomic analysis
+
+# Figure
+
+# ML pipeline
+
+Custom integrative ML pipeline is available here: https://github.com/gmanikis/integrative_AI
 
 Malignant epithelial cells are the most heterogeneous cell type with almost every patient forming a separate cluster. Here, we present a method, AI-EPI (**A**tlas-level **I**ntegrated **E**pithelial **P**rogram **I**dentification), which identify patient-shared and patient-specific gene modules (GM) simultaneously and efficiently.The
 method mainly contains two steps:
@@ -16,9 +35,6 @@ method mainly contains two steps:
 -   code for data pre-processing
 -   code for figure
 
-<div align=center> 
-<img src="./Source/predix her2 trial.png.png" alt="predix her2 trial.png">
-</div> 
 
 nf-core workflow
 ------------

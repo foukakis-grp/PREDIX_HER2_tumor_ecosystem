@@ -1,0 +1,7 @@
+dir: "/proj/sens2022005/nobackup/CUTseq/snakemake/gatk-cnv/1e5_merged/"
+tumor_dir: "/proj/sens2022005/nobackup/CUTseq/CUTseq-data/tumor_merge/result/"
+normal_dir: "/proj/sens2022005/nobackup/CUTseq/CUTseq-data/blood/"
+binsize: "1e5"
+ref: "/sw/data/uppnex/ToolBox/hg38bundle/Homo_sapiens_assembly38.fasta"
+dictionary: "/sw/data/uppnex/ToolBox/hg38bundle/Homo_sapiens_assembly38.dict"
+threads: 16

@@ -1,0 +1,208 @@
+import glob, os
+
+# Specify config file
+configfile: "config_manos.yaml"
+
+# Get normal names
+tumors = glob.glob(config['tumor_dir'] + "*.bam")
+tumors = [os.path.basename(os.path.splitext(tumor)[0]) for tumor in tumors]
+normals = glob.glob(config['normal_dir'] + "*.bam")
+normals = [os.path.basename(os.path.splitext(normal)[0]) for normal in normals]
+
+# Output formats for plots and models
+plotDenoisedCopyRatiosformats = [
+	"denoised.png",
+	"standardizedMAD.txt", "denoisedMAD.txt", 
+	"deltaMAD.txt","scaledDeltaMAD.txt"
+	]
+	
+plotTumorSegmentsformats = [
+	"modeled.png"
+	]
+
+
+modelformats = [
+	"af.igv.seg", "cr.igv.seg", "cr.seg",	
+	"modelBegin.af.param", "modelBegin.cr.param", "modelBegin.seg",
+	"modelFinal.af.param", "modelFinal.cr.param", "modelFinal.seg"
+	]
+
+# Rule all for specifying end-goal files
+rule all:
+	input:
+		pon=config['dir'] + "pon.hdf5",
+		models=expand(config['dir'] + "model_tumor/{tumor}.called.seg",
+			tumor = tumors),
+		plotsDenoisedCopyRatios = expand(config['dir'] + "plots_tumor/{tumor}.{ext}",
+			ext = plotDenoisedCopyRatiosformats, tumor = tumors),
+		plotsTumorSegmentsformats = expand(config['dir'] + "plots_tumor_segments/{tumor}.{ext}",
+			ext = plotTumorSegmentsformats, tumor = tumors)
+
+
+
+# Creating interval list
+rule CreateIntervals:
+	input:
+		ref=config['ref']
+	output:
+		config['dir'] + config['binsize'] + "-bp.interval_list"
+	params:
+		binsize=int(float(config['binsize']))
+	threads: 1
+	shell:
+		"gatk PreprocessIntervals -R {input.ref} --bin-length {params.binsize} "
+		"--interval-merging-rule OVERLAPPING_ONLY --padding 0 -O {output}"
+
+# Annotating interval list
+rule CreateAnnotatedIntervals:
+	input:
+		ref=config['ref'],
+		interval=config['dir'] + config['binsize'] + "-bp.interval_list"
+	output:
+		config['dir'] + config['binsize'] + "-bp_annot.interval_list"
+	threads: 1
+	shell:
+		"gatk AnnotateIntervals -R {input.ref} -L {input.interval} "
+		"--interval-merging-rule OVERLAPPING_ONLY -O {output}"
+
+# Collecting normal read counts
+rule CollectNormalCounts:
+	input:
+		bam=config['normal_dir'] + "{normal}.bam",
+		interval=config['dir'] + config['binsize'] + "-bp.interval_list"
+	output:
+		config['dir'] + "readcounts-normal/{normal}_counts.hdf5"
+	threads: 3
+	shell:
+		"gatk CollectReadCounts -I {input.bam} -L {input.interval} "
+		"--interval-merging-rule OVERLAPPING_ONLY -O {output}"
+
+# Create PoN
+poncounts = expand(config['dir'] + "readcounts-normal/{normal}_counts.hdf5",
+	normal = normals)
+
+rule CreatePON:
+	input:
+		counts=expand(config['dir'] + "readcounts-normal/{normal}_counts.hdf5",
+			normal = normals),
+		interval=config['dir'] + config['binsize'] + "-bp_annot.interval_list"
+	output:
+		config['dir'] + "pon.hdf5"
+	params:
+		poncounts=["-I " + x for x in poncounts]
+	threads: config['threads']
+	shell:
+		"gatk CreateReadCountPanelOfNormals {params.poncounts} -O {output} "
+		"--minimum-interval-median-percentile 5.0 "
+		" --conf 'spark.executor.cores={threads}'"
+		# Find a fix to include GC correction..
+
+# Collecting tumor read counts
+rule CollectTumorCounts:
+	input:
+		bam=config['tumor_dir'] + "{tumor}.bam",
+		interval=config['dir'] + config['binsize'] + "-bp.interval_list"
+	output:
+		config['dir'] + "readcounts-tumor/{tumor}_counts.hdf5"
+	threads: 3
+	shell:
+		"gatk CollectReadCounts -I {input.bam} -L {input.interval} "
+		"--interval-merging-rule OVERLAPPING_ONLY -O {output}"
+
+# Denoise tumor profiles using PON
+rule DenoiseTumors:
+	input:
+		counts=config['dir'] + "readcounts-tumor/{tumor}_counts.hdf5",
+		pon=config['dir'] + "pon.hdf5"
+	output:
+		stand=config['dir'] + "readcounts-tumor/{tumor}_standardizedCR.tsv",
+		denoised=config['dir'] + "readcounts-tumor/{tumor}_denoisedCR.tsv"
+	threads: 3
+	params:
+		java="--java-options -Xmx12G"
+	shell:
+		"gatk {params.java} DenoiseReadCounts -I {input.counts} "
+		"--count-panel-of-normals {input.pon} "
+		"--standardized-copy-ratios {output.stand} "
+		"--denoised-copy-ratios {output.denoised}"
+
+# Generate CNV plots
+rule PlotDenoisedCopyRatios:
+	input:
+		stand=config['dir'] + "readcounts-tumor/{tumor}_standardizedCR.tsv",
+		denoised=config['dir'] + "readcounts-tumor/{tumor}_denoisedCR.tsv",
+		dic=config['dictionary']
+	output:
+		expand(config['dir'] + "plots_tumor/{{tumor}}.{ext}",
+			ext = plotDenoisedCopyRatiosformats)
+	params:
+		directory=config['dir'] + "plots_tumor/",
+		prefix="{tumor}"
+	threads: 3
+	shell:
+		"gatk PlotDenoisedCopyRatios --standardized-copy-ratios {input.stand} "
+		"--denoised-copy-ratios {input.denoised} --sequence-dictionary "
+		"{input.dic} --output {params.directory} "
+		"--output-prefix {params.prefix}"
+
+
+
+
+
+
+
+
+# Model tumor segments
+rule ModelTumorSegments:
+	input:
+		config['dir'] + "readcounts-tumor/{tumor}_denoisedCR.tsv"
+	output:
+		config['dir'] + "model_tumor/{tumor}.cr.seg",
+		config['dir'] + "model_tumor/{tumor}.af.igv.seg",
+		config['dir'] + "model_tumor/{tumor}.cr.igv.seg",
+		config['dir'] + "model_tumor/{tumor}.modelBegin.seg",
+		config['dir'] + "model_tumor/{tumor}.modelBegin.af.param",
+		config['dir'] + "model_tumor/{tumor}.modelBegin.cr.param",
+		config['dir'] + "model_tumor/{tumor}.modelFinal.seg",
+		config['dir'] + "model_tumor/{tumor}.modelFinal.af.param",
+		config['dir'] + "model_tumor/{tumor}.modelFinal.cr.param"	
+	params:
+		java="--java-options -Xmx12G",
+		prefix="{tumor}",
+		directory=config['dir'] + "model_tumor/",
+		smoothing="--number-of-changepoints-penalty-factor 1 "
+				  "--smoothing-credible-interval-threshold-copy-ratio 1"
+	threads: 2
+	shell:
+		"gatk {params.java} ModelSegments --denoised-copy-ratios "
+		"{input} --output {params.directory} --output-prefix {params.prefix} "
+		"{params.smoothing}"
+
+# Call tumor segments
+rule CallTumorSegments:
+	input:
+		config['dir'] + "model_tumor/{tumor}.cr.seg"
+	output:
+		config['dir'] + "model_tumor/{tumor}.called.seg"
+	threads: 2
+	shell:
+		"gatk CallCopyRatioSegments -I {input} -O {output}"
+
+# Plot tumor segments
+rule PlotTumorSegments:
+	input:
+		denoised=config['dir'] + "readcounts-tumor/{tumor}_denoisedCR.tsv",
+		segments=config['dir'] + "model_tumor/{tumor}.modelFinal.seg",
+		dic=config['dictionary']
+	output:
+		expand(config['dir'] + "plots_tumor_segments/{{tumor}}.{ext}",
+			ext = plotTumorSegmentsformats)
+	params:
+		directory=config['dir'] + "plots_tumor_segments/",
+		prefix="{tumor}"
+	threads: 3
+	shell:
+		"gatk PlotModeledSegments --denoised-copy-ratios {input.denoised} "
+		"--segments {input.segments} --sequence-dictionary {input.dic} "
+		"--minimum-contig-length 46709983 -O {params.directory} --output-prefix"
+		" {params.prefix}"
