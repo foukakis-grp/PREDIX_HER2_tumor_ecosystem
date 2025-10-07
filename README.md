@@ -1,5 +1,10 @@
-This repository contains codes to perform analysis for the manuscript titled "Multi-omic Profiling Reveals Predictive Biomarkers of Response to Antibody-Drug Conjugates in HER2-Positive Breast Cancer"
------------
+# 🧬 Multi-omic Profiling of HER2-Positive Breast Cancer
+
+This repository contains the code and workflows used for analyses presented in the manuscript:  
+
+> **“Multi-omic Profiling Reveals Predictive Biomarkers of Response to Antibody-Drug Conjugates in HER2-Positive Breast Cancer.”**
+
+---
 
 -  PREDIX HER2 trial (Hatschek T et al; JAMA Oncol. 2021)
 
