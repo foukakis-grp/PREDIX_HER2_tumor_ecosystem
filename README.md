@@ -1,4 +1,4 @@
-### This repository contains codes to perform analysis for the manuscript titled "Multi-omic Profiling Reveals Predictive Biomarkers of Response to Antibody-Drug Conjugates in HER2-Positive Breast Cancer"
+This repository contains codes to perform analysis for the manuscript titled "Multi-omic Profiling Reveals Predictive Biomarkers of Response to Antibody-Drug Conjugates in HER2-Positive Breast Cancer"
 -----------
 
 -  PREDIX HER2 trial (Hatschek T et al; JAMA Oncol. 2021)
@@ -8,23 +8,30 @@
 </div>
 
 
-# Data pre-processing
+Data pre-processing
+-----------
 
 -   RNA-seq: nf-core ranseq
--   WES: nf-core sarek, PureCN best practices
+-   WES: nf-core sarek/hlatyping, PureCN best practices, GISTIC2.0, HLALOH, pVACseq, TcellExtrect  
 -   CUT-seq: GATK copy number pipeline, GISTIC2.0
--   Proteomics: 
--   Xenium: Quality control, data integration
+-   Proteomics: QC 
+-   Xenium: QC, data integration, cluster/subcuster
+-   Digital image: FLOCK
 
-# Multi-omics metrics
+Multi-omics metrics collection
+-----------
 
 -  RNA-seq: DEG, transcriptomic metrics
 -  WES: genomic metrics
 -  Proteogenomic analysis
 
-# Figure
+Figure
+-----------
+-  Figure1-7
+-  FigureS1-9
 
-# ML pipeline
+ML pipeline
+-----------
 
 Custom integrative ML pipeline is available here: https://github.com/gmanikis/integrative_AI
 
