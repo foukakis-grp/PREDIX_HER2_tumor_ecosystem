@@ -1,5 +1,5 @@
 library(Seurat);library(SeuratObject);library(SeuratDisk);library(BPCells)
-library(dplyr);library(ggplot2);library(patchwork)
+library(dplyr);library(ggplot2);library(patchwork);library(scCustomize)
 options(future.globals.maxSize = 200 * 1024^3)  
 options(max.print = 10000)
  
@@ -47,16 +47,22 @@ Epi_meta=Epi_meta[,c("cell.name","cell_type","cell_state")]
 saveRDS(Epi_meta,file="/proj/sens2022005/Xenium/PREDIX_HER2/result/cell_typing/Epi_meta.rds")
 
 # B cell res0.3
-# Naive B cell  TCL1A 0,4,5
-# Memory B cell  CD27,AICDA  1,2,3,6,7,8
-load("/proj/sens2022005/Xenium/PREDIX_HER2/result/cell_typing/Bcell_subcluster.Rdata")
+# Naïve B CD19⁺ MS4A1⁺ CD22⁺ BANK1⁺ IKZF3⁺   7
+# Memory B cell  CXCR4⁺ FCRL1⁺ CXCR5⁺ S1PR1⁺ 6
+# Plasma cells (XBP1⁺ TENT5C⁺ PDIA4⁺) 5
+load("/proj/sens2022005/Xenium/PREDIX_HER2/result/cell_typing/Bcell_subcluster_final_final.Rdata")
 gc()
-DimPlot(merged.object,reduction = "umap.subcluster.harmony",group.by = "harm.graph_res.0.2",
+table(merged.object$harm.graph_res.0.2,Idents(merged.object))
+DimPlot(merged.object,reduction = "umap.subcluster.harmony",group.by = "harm.graph_res.0.2", # delet 1,2,3,4,
         alph=0.7,label = T)+NoLegend()
-features=c("TCL1A", "CD27")
+table(merged.object$harm.graph_res.0.4,Idents(merged.object))
+features=c("TCL1A", "CD27","MZB1","EPCAM","FN1","CD68")
+features=c("CD79A","MZB1","MS4A1","EPCAM","FN1","TRAC","CXCR4")
+features=c("MS4A1")
+VlnPlot(merged.object, features = features,group.by ="harm.graph_res.0.3")
 FeaturePlot(merged.object,reduction="umap.subcluster.harmony", features = features,
             min.cutoff = 0, max.cutoff = 10,)
-DotPlot(merged.object, features = features,group.by ="harm.graph_res.0.2") + RotatedAxis()
+DotPlot(merged.object, features = features,group.by ="harm.graph_res.0.3") + RotatedAxis()
 
 merged.object <- JoinLayers(merged.object)
 markers <- FindAllMarkers(
@@ -68,16 +74,27 @@ markers <- FindAllMarkers(
 )
 merged.object@meta.data$cell_type="Bcell"
 merged.object@meta.data$cell_state=NA
-merged.object$cell_state="Memory B"
-merged.object$cell_state[merged.object$harm.graph_res.0.2%in%c(2)]="Naive B"
+merged.object$cell_state[merged.object$harm.graph_res.0.2%in%c(1)]="Plasma"
+merged.object$cell_state[merged.object$harm.graph_res.0.2%in%c(3)]="Memory B"
+merged.object$cell_state[merged.object$harm.graph_res.0.2%in%c(2)]="CD24_B"
 pal=c("#f3c300","#875692","#f38400","#a1caf1","#be0032","#c2b280","#008856","#e68fac","#0067a5","#f99379","#604e97","#f6a600")
 Bcell=DimPlot(merged.object,reduction = "umap.subcluster.harmony",group.by = "cell_state",cols=pal,alph=0.7,label = T)+ ggplot2::theme(legend.position = "none")
 Bcell
 ggsave(Bcell,file="/proj/sens2022005/Xenium/PREDIX_HER2/result/cell_typing/Bcell_subcluster.pdf",width=5,height=5)
 
+features = c("MS4A1","CXCR4","CD79A","XBP1","MZB1","TENT5C","TNFRSF17","CD24")
+Idents(merged.object)=merged.object$cell_state
+Idents(merged.object)=factor(Idents(merged.object),levels = c("CD24_B","Memory B","Plasma"))
+p2=Clustered_DotPlot(seurat_object = merged.object, features = features,show_parent_dend_line=F)
+p2=p2[[2]]
+p2
+ggsave(p2,file="/proj/sens2022005/Xenium/PREDIX_HER2/result/cell_typing/Bcell_subcluster_dotplot.pdf",width=5,height=5)
+
+
 Bcell_meta=merged.object@meta.data[,c("cell_type","cell_state")]
 Bcell_meta$cell.name=row.names(Bcell_meta)
 Bcell_meta=Bcell_meta[,c("cell.name","cell_type","cell_state")]
+Bcell_meta$cell_state%>%table()
 saveRDS(Bcell_meta,file="/proj/sens2022005/Xenium/PREDIX_HER2/result/cell_typing/Bcell_meta.rds")
 
 
@@ -289,6 +306,8 @@ saveRDS(Tcell_meta,file="/proj/sens2022005/Xenium/PREDIX_HER2/result/cell_typing
 ###########merge cell state with Seurat#############
 data=readRDS("/proj/sens2022005/Xenium/PREDIX_HER2/result/cell_typing/data_harmony_labeled.rds")
 nrow(data@meta.data)
+data=subset(data,subset = sampleID!="1228_BO")
+nrow(data@meta.data)
 str(data@meta.data)
 Epi_meta=readRDS("/proj/sens2022005/Xenium/PREDIX_HER2/result/cell_typing/Epi_meta.rds") 
 Tcell_meta=readRDS("/proj/sens2022005/Xenium/PREDIX_HER2/result/cell_typing/Tcell_meta.rds") 
@@ -305,32 +324,24 @@ data@meta.data$cell_type=NA
 data$cell_type=meta$cell_type
 data@meta.data$cell_state=NA
 data$cell_state=meta$cell_state
+table(Idents(data),data$cell_type)
+data$cell_type[Idents(data)=="Adipocytes"]="Adipocytes"
+data$cell_type[data$cell_type%in%c("Normal epithelial","Tumor epithelial")]="Epithelial"
 Idents(data)=data$cell_type
 table(Idents(data))
-merged.object=subset(data,idents=c("Bcell","Endothelial","Mesenchymal","Myeloid","Normal epithelial","Tcell","Tumor epithelial"))
-
+merged.object=subset(data,idents=c("Epithelial", "Tcell", "Bcell","Myeloid","Mesenchymal","Endothelial","Adipocytes"))
+nrow(merged.object@meta.data)
+### ADC trafficking ###
+gene_list <- list(c("RAB11B","RAB5A","ERLIN2","SLC12A2","VAMP3","ABCC12")) 
+merged.object=JoinLayers(merged.object)
+merged.object <- AddModuleScore(merged.object, features = gene_list,name = "ADC_trafficking")
+meta=merged.object@meta.data%>%as.data.frame()
+meta$patientID=substr(meta$sampleID,1,4)
+meta=meta[,c("orig.ident","nCount_RNA","nFeature_RNA","nCount_Xenium","nFeature_Xenium","segmentation_method","nCount_BlankCodeword","nFeature_BlankCodeword",
+             "nCount_ControlCodeword","nFeature_ControlCodeword","nCount_ControlProbe","nFeature_ControlProbe","nCount_GenomicControl","nFeature_GenomicControl",
+             "badquality_count_per","sampleID","patientID","cell.name","cell_type","cell_state","ADC_trafficking1")]
+saveRDS(meta,"/proj/sens2022005/Xenium/PREDIX_HER2/result/cell_typing/Xenium_baselineMeta_cell_state_curated.rds")
 # change the dir of BPcells
-
-merged.object@assays[["RNA"]]@layers[["counts"]]@matrix@matrix_list[[1]]@matrix@matrix@matrix@dir
-
-# change BP dir
-for (i in seq_along(merged.object@assays[["RNA"]]@layers[["counts"]]@matrix@matrix_list)) {
-  old_dir <- merged.object@assays[["RNA"]]@layers[["counts"]]@matrix@matrix_list[[i]]@matrix@matrix@matrix@dir
-  
-  # replace dir
-  new_dir <- sub(
-    pattern = "^/proj/sens2022005/Xenium/PREDIX_HER2/data/BP_sep25/",
-    replacement = "E:/Projects/PREDIX_HER2/Multimodal/Data/Xenium/BPcell/",
-    x = old_dir
-  )
-  
-  # updated dir
-  merged.object@assays[["RNA"]]@layers[["counts"]]@matrix@matrix_list[[i]]@matrix@matrix@matrix@dir <- new_dir
-}
-
-
-merged.object@assays[["RNA"]]@layers[["counts"]]@matrix@matrix_list[[2]]@matrix@matrix@matrix@dir
+merged.object[["RNA"]]$data <- as(merged.object[["RNA"]]$data, Class = "dgCMatrix")
 saveRDS(merged.object,"/proj/sens2022005/Xenium/PREDIX_HER2/result/cell_typing/Seurat_cell_state_curated_localBPcell_Oct2025.rds")
-
-
 

@@ -184,7 +184,7 @@ write.table(df,file="E:/Projects/PREDIX_HER2/Multimodal/Figures/Figure2/source_d
 library(vcd);library("ggsci");library(tidyverse);library(data.table)
 clin=fread("E:/Projects/PREDIX_HER2/Multimodal/Data/Clin/PREDIX_HER2_clin_curated.txt")
 genomic=fread("E:/Projects/PREDIX_HER2/Multimodal/Data/Curated_metrics/genomic_metrics_PREDIX_HER2.txt")
-genomic=left_join(genomic,clin,by="patientID")
+genomic=left_join(genomic,clin,by="patientID") # genomic=genomic[genomic$switch=="No",]
 genomic$Response=factor(genomic$Response,levels = c("RD","pCR"))
 genomic$TP53[genomic$coding_mutation_TP53_oncokb==1]="Mutation"
 genomic$TP53[genomic$coding_mutation_TP53_oncokb==0]="Wild type"
@@ -211,7 +211,9 @@ ShowRegTable(interaction_2)
 interaction_2<- glm(pCR ~ coding_mutation_TP53_oncokb+ER, family = "binomial", data =genomic[genomic$Arm=="T-DM1",])
 library(tableone)
 ShowRegTable(interaction_2)
-
+interaction_2<- glm(pCR ~ coding_mutation_TP53_oncokb+ER, family = "binomial", data =genomic[genomic$Arm=="DHP",])
+library(tableone)
+ShowRegTable(interaction_2)
 #Fig.2c
 library(tableone);library(tidyverse);library(caret);library(foreach);library(stats);library(lmtest);library(data.table);library(readxl)
 library(forestplot);library(ggpubr)

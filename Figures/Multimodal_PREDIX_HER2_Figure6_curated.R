@@ -1,3 +1,22 @@
+############################
+############################
+############################
+library(SeuratDisk);library(Seurat);library(tidyverse)
+object=readRDS("E:/Projects/PREDIX_HER2/Multimodal/Data/Xenium/cell_state_integration/Seurat_cell_state_curated_localBPcell_Oct2025.rds")
+table(object$cell_type)
+library(MAST)
+
+markers_wilcox <- FindAllMarkers(
+  object,
+  only.pos        = TRUE,
+  min.pct         = 0.05,
+  logfc.threshold = 0.15,
+  test.use        = "wilcox"
+)
+res=markers_wilcox%>%filter(avg_log2FC>1,pct.1>0.3,pct.2<0.2)
+write.csv(res,file="E:/Projects/PREDIX_HER2/Multimodal/Figures/Figure7/cell_type_DEGs.csv",quote = F,row.names =F)
+
+
 library(data.table);library(ggplot2);library(scales);library(RColorBrewer);library(tidyverse)
 df=readRDS("E:/Projects/PREDIX_HER2/Multimodal/Data/Xenium/Xenium_baselineMeta_cell_state_curated.rds")
 df=df[df$sampleID=="1807_BL",]
@@ -18,14 +37,17 @@ for (id in names(data_list)) {
 ############### Export meta data for  Niche ################
 library(data.table);library(ggplot2);library(scales);library(RColorBrewer);library(tidyverse)
 data=readRDS("E:/Projects/PREDIX_HER2/Multimodal/Data/Xenium/Xenium_baselineMeta_cell_state_curated.rds")
-table(data$cell_type_major_curated,data$cell_state)
 data$cell_name=row.names(data)
+threshold <- quantile(data$ADC_trafficking1[data$cell_state%in%c("LumA_SC","LumB_SC","Her2E_SC","Basal_SC")], 0.75, na.rm = TRUE)
+data$cell_state[data$cell_state%in%c("Her2E_SC")&data$ADC_trafficking1>threshold]="ADC trafficking Her2E_SC"  
+table(data$cell_state)
 write.csv(data,file="E:/Projects/PREDIX_HER2/Multimodal/Data/Xenium/Xenium_baselineMeta_cell_state_curated.csv",quote = F,row.names =F)
 
 
 # Xenium representative image, export cell label
 library(data.table);library(ggplot2);library(scales);library(RColorBrewer);library(tidyverse)
 df=readRDS("E:/Projects/PREDIX_HER2/Multimodal/Data/Xenium/Xenium_baselineMeta_cell_state_curated.rds")
+nrow(df)
 df$group=df$cell_state
 df$cell_id=sub("^[^_]+_[^_]+_", "", row.names(df)) 
 data_list <- split(df, df$sampleID)
@@ -35,7 +57,7 @@ for (id in names(data_list)) {
             quote = FALSE, sep = "\t", row.names = FALSE)
 }
 
-df$group=df$cell_type_major_curated
+df$group=df$cell_type
 data_list <- split(df, df$sampleID)
 # 循环导出每个子数据集
 for (id in names(data_list)) {
@@ -57,77 +79,61 @@ for (id in names(data_list)) {
 
 ############################
 ######### Fig1b-c #########
+############################
 library(Seurat);library(scCustomize)
 library(SeuratObject);library(BPCells)
 library(dplyr);library(ggplot2);library(patchwork)
 library(data.table)
 options(future.globals.maxSize = 50 * 1024^3)  
 gc()
-object=readRDS("E:/Projects/PREDIX_HER2/Multimodal/Data/Xenium/Seurat_cell_state_curated_ondisk.rds")
-Idents(object)<- object$cell_type_major_curated
-
-p <- VlnPlot(object, features = "nCount_RNA")
-ggsave("E:/Projects/PREDIX_HER2/Multimodal/Data/Xenium/violin_plot.png", plot = p, width = 12, height = 6)
-
-table(object$cell_type_major_curated)
+object=readRDS("E:/Projects/PREDIX_HER2/Multimodal/Data/Xenium/cell_state_integration/Seurat_cell_state_curated_localBPcell_Oct2025.rds")
+nrow(object@meta.data)
 Idents(object) <- factor(Idents(object), 
-                         levels = c("Epithelial cells", "T cells", "B cells","Plasma", 
-                                   "Myeloid cells","Mesenchymal cells","Endothelial cells",
-                                   "Adipocytes", "Mast cells"))
-table(object@meta.data$cell_type_major_curated)
-col=c("#D1352B","#3C77AF","#FCED82","#BBDD78",
-      "#90C2E7","#7DBFA7","#9B5B33","grey","#F28E73")
-p1=DimPlot(object,reduction = "umap.cca.full",cols=col,
-        alph=0.7,label = T)+NoLegend()
-
-DimPlot(object,group.by = "leiden_cluster",reduction = "umap.cca.full",
-        alph=0.7,label = T)+NoLegend()
-all.markers <- FindAllMarkers(object = object)
-res=all.markers%>%filter(avg_log2FC>1,pct.1>0.3,pct.2<0.2)
-write.csv(res,file="E:/Projects/PREDIX_HER2/Multimodal/Figures/Figure7/cell_type_DEGs.csv",
-          quote = F,row.names =F)
-
-cell_type=data.frame(cell_name=colnames(object),
-                     cell_type=object$cell_type_major,
-                     cell_type_curated=object$cell_type_major_curated)
-
-write.csv(cell_type,file="E:/Projects/PREDIX_HER2/Multimodal/Figures/Figure7/cell_type.csv",
-          quote = F,row.names =F)
-
-
+                       levels =c("Epithelial", "Tcell", "Bcell",
+                                     "Myeloid","Mesenchymal","Endothelial",
+                                     "Adipocytes"))
+col=c("#D1352B","#3C77AF","#FCED82",
+      "#90C2E7","#7DBFA7","#9B5B33","grey")
+p1=DimPlot(object,reduction = "umap.harmony3",cols=col,
+           alph=0.7,label = T)+NoLegend()
+p1
 ggsave(p1, file="E:/Projects/PREDIX_HER2/Multimodal/Figures/Figure6/Fig6b.pdf", width=5, height=5)
 
+all.markers <- FindAllMarkers(object = object)
+table(Idents(object))
+res=all.markers%>%filter(avg_log2FC>1,pct.1>0.3,pct.2<0.2)
+write.csv(res,file="E:/Projects/PREDIX_HER2/Multimodal/Figures/Figure7/cell_type_DEGs.csv",quote = F,row.names =F)
+
+cell_type=data.frame(cell_name=colnames(object),
+                     cell_type=object$cell_type,
+                     cell_state=object$cell_state)
+write.csv(cell_type,file="E:/Projects/PREDIX_HER2/Multimodal/Figures/Figure7/cell_type_state.csv",
+          quote = F,row.names =F)
+
+object@meta.data$group=NULL 
+object$group=object$cell_type
 # bubble plot for canonical markers
-Idents(object) <- factor(Idents(object), 
-                                levels =rev(c("Epithelial cells", "T cells", "B cells","Plasma", 
-                                              "Myeloid cells","Mesenchymal cells","Endothelial cells",
-                                              "Adipocytes", "Mast cells")))
-markers.to.plot <- c("ERBB2","KRT19","EPCAM","ESR1",
-                     "TRAC","CD3E",
-                     "MS4A1","CD79A","MZB1",
-                     "CD68","FCGR2A","CD163","MSR1",
-                     "COL5A1","PDGFRB","ACTA2",
-                     "VWF","PLVAP","FABP4","PLIN1","CPA3","MS4A2")  #"MCAM"
-p2=DotPlot_scCustom(object, features = markers.to.plot) + RotatedAxis()
+object$group <- factor(object$group, 
+                         levels =rev(c("Epithelial", "Tcell", "Bcell",
+                                       "Myeloid","Mesenchymal","Endothelial",
+                                       "Adipocytes")))
+Idents(object)=object$group
+markers <- list(
+  "Epithelial"=c("ERBB2","EPCAM","KRT19","ERBB3","ESR1"),
+  "Tcell"=c("CD3E","CD8A","IL7R","CCL5","GZMK"),
+  "Bcell"=c("TENT5C",'CD79A',"MZB1","FCRL5"),
+  "Myeloid"=c("CD68","FCGR2A","MSR1","SLCO2B1"),
+  "Mesenchymal"=c("ACTA2","COL11A1","PDGFRB","THBS2"),
+  "Endothelial"=c("VWF","PLVAP","ENG"),
+  "Adipocytes"=c("FABP4","PLIN1","PLIN4","ADIPOQ")
+)
 
-#object <- ScaleData(object, features =markers.to.plot)
-#DoHeatmap(object = object, features =markers.to.plot)
-#scCustomize::Clustered_DotPlot(object,assay="RNA", features = markers.to.plot,
-#                               plot_km_elbow = FALSE, flip = TRUE)
+DotPlot(object,markers)+theme(axis.text.x = element_text(angle = 90))
+# 10X4
 
-
-# Epithelial EPCAM 35,64,
-# T CD3E CD4A CD8A
-# B MS4A1 CD19        40 51
-# Plamablasts MZB1 XBP1   20 44 53 67
-# Myeloid CD68
-# Fibrolast PDGFRA PDGFRB ACTA2 FAP 10
-# Endothelial PECAM1 CD34 VWF 
-# PLV PDGFRB, MCAM
-# Adipocyte PLIN1 FABP4
-# Mast cell CPA3   45
-
-data=readRDS("E:/Projects/PREDIX_HER2/Multimodal/Data/Xenium/Xenium_baselineMeta_cell_state_curated.rds")
+### fig6d ###
+data=fread("E:/Projects/PREDIX_HER2/Multimodal/Data/Xenium/Xenium_baselineMeta_cell_state_curated.csv")
+data$patientID=as.character(data$patientID)
 pid=fread("E:/Projects/PREDIX_HER2/Multimodal/Data_repository/PREDIX_HER2_multiomics_meta.txt")
 pid$patientID=NA
 pid$patientID=substr(pid$sampleID.wes,9,12)%>%as.character()
@@ -135,76 +141,54 @@ pid$patientID[is.na(pid$patientID)]=substr(pid$sampleID.rna[is.na(pid$patientID)
 meta=readRDS("E:/Projects/PREDIX_HER2/Multimodal/Data/Clin/PREDIX_HER2_clin_curated.rds")
 meta$patientID=as.character(meta$patientID)
 data=left_join(data,meta,by="patientID")%>%left_join(pid,by="patientID")
-data$cell_type_major_curated<- factor(data$cell_type_major_curated, 
-                         levels = c("Epithelial cells", "T cells", "B cells","Plasma", 
-                                    "Myeloid cells","Mesenchymal cells","Endothelial cells",
-                                    "Adipocytes", "Mast cells"))
-col=c("#D1352B","#3C77AF","#FCED82","#BBDD78",
-      "#90C2E7","#7DBFA7","#9B5B33","grey","#F28E73")
+data$cell_type <- factor(data$cell_type, 
+                         levels =c("Epithelial", "Tcell", "Bcell",
+                                   "Myeloid","Mesenchymal","Endothelial",
+                                   "Adipocytes"))
+col=c("#D1352B","#3C77AF","#FCED82",
+      "#90C2E7","#7DBFA7","#9B5B33","grey")
 data=data[order(data$Arm),]
 table(is.na(data$study_id))
 table(data$study_id[data$Arm=="T-DM1"])
 table(data$study_id[data$Arm=="DHP"])
-data$study_id=factor(data$study_id,levels = c("P103","P108","P115","P119","P133","P135",
-              "P137","P150","P153","P186","P188","P189","P3","P33","P48","P5","P69","P75","P98",
-              "P114","P132","P182","P184","P41","P43","P63","P84"))
+data$study_id=factor(data$study_id,levels = c("P103","P115","P119","P133","P135",
+                                              "P137","P150","P153","P186","P188","P189","P3","P33","P48","P5","P69","P75","P98",
+                                              "P114","P132","P182","P184","P41","P43","P63","P84"))
 
 mytable=data %>%
-  group_by(study_id,cell_type_major_curated) %>%
+  group_by(study_id,cell_type) %>%
   summarise(n = n()) %>%
   mutate(freq = n / sum(n))
 write.table(mytable,file="E:/Projects/PREDIX_HER2/Multimodal/Figures/SourceData/Fig6d.txt",quote = F,row.names =F,sep="\t")
 
 library(ggpubr)
-p3=ggbarplot(mytable, "study_id", "freq",
-             fill = "cell_type_major_curated", 
-             color = "cell_type_major_curated", 
+ggbarplot(mytable, "study_id", "freq",
+             fill = "cell_type", 
+             color = "cell_type", 
              palette = col,
              legend = "right") +
   labs(fill = "cell type", color = "cell type") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size=7))
-#14X6
-p=p2/p3
-p
+#5.5X3
 
-ggsave(p, file="E:/Projects/PREDIX_HER2/Multimodal/Figures/Figure6/Fig6c_d.pdf", width=16, height=4)
-####################################
-######create ADC traffking #########
-####################################
-tumor=data[data$cell_type%in%c("HER2+ cancer cell","LumA cancer cell","LumB cancer cell","Basal-like cancer cells"),]
-tumor$ADC_trafficking_score=rowMeans(tumor[,c("RAB11B","RAB5A","ERLIN2","SLC12A2","SLC25A10","ABCC12")])
-threshold <- quantile(tumor$ADC_trafficking_score, 0.75, na.rm = TRUE)
-data$cell_type[data$cell_type=="HER2+ cancer cell"&tumor$ADC_trafficking_score>threshold]="ADC trafficking HER2+ cancer Cell"  #|tumor$ABCC12>1 |tumor$RAB11FIP5>1|
-tumor=data[data$cell_type%in%c("LumA cancer cell","LumB cancer cell",
-                               "HER2+ cancer cell","Basal-like cancer cells","ADC trafficking HER2+ cancer Cell"),]
-table(tumor$cell_type)
 
-write.csv(data,file="E:/Projects/PREDIX_HER2/Multimodal/Data/Xenium/Xenium_cell_label_baseline_curated.csv",
-             quote = FALSE, sep = "\t", row.names = FALSE)
 ####################################
 ################ pCR ###############
 ####################################
 library(data.table);library(ggplot2);library(scales);library(RColorBrewer);library(tidyverse)
 data=readRDS("E:/Projects/PREDIX_HER2/Multimodal/Data/Xenium/Xenium_baselineMeta_cell_state_curated.rds")
-table(data$cell_type_major_curated,data$sampleID)
-tumor=data[data$cell_state%in%c("Basal_SC","Her2E_SC","LumA_SC","LumB_SC"),]
-data$ADC_trafficking1
-table(tumor$cell_state)
-table(tumor$cell_state,tumor$sampleID)
-#tumor=tumor[!tumor$sampleID %in% c("1228_BO"),]
-
-#tumor$cell_type[tumor$cell_type%in%c("Non-endocytic HER2+ cancer Cell")&(tumor$ABCC12>1|tumor$SLC12A2>1)]="Endocytic HER2+ cancer Cell"
-#tumor$ADC_trafficking_score=rowMeans(tumor[,c("RAB11B","RAB11FIP5","RAB5A","ERLIN2","SLC12A2","SLC25A10","ABCC12")])
+table(data$cell_state)
+tumor=data[data$cell_state%in%c("Her2E_SC","LumA_SC","LumB_SC","Basal_SC"),]
 threshold <- quantile(tumor$ADC_trafficking1, 0.75, na.rm = TRUE)
-tumor$cell_state[tumor$cell_state=="Her2E_SC"&tumor$ADC_trafficking1>threshold]="ADC trafficking Her2E_SC"  #|tumor$ABCC12>1 |tumor$RAB11FIP5>1|
+tumor$cell_state[tumor$cell_state=="Her2E_SC"&tumor$ADC_trafficking1>threshold]="ADC trafficking Her2E_SC"  
 table(tumor$cell_state)
-rm(data)
 tumor_cell_proportion <- tumor %>%
   group_by(patientID, cell_state) %>%
   summarise(count = n(), .groups = "drop") %>%
   group_by(patientID) %>%
   mutate(proportion = count / sum(count)) %>%
   ungroup()
+library(tidyverse) 
 tumor_cell_proportion_wide <- tumor_cell_proportion %>%
   select(patientID, cell_state, proportion) %>%
   pivot_wider(names_from = cell_state, values_from = proportion, values_fill = 0)
@@ -242,14 +226,9 @@ ggsave(Fig3c, file="E:/Projects/PREDIX_HER2/Multimodal/Figures/Figure6/Fig6e.pdf
 ######Immune and stromal####
 library(data.table);library(ggplot2);library(scales);library(RColorBrewer);library(tidyverse)
 data=readRDS("E:/Projects/PREDIX_HER2/Multimodal/Data/Xenium/Xenium_baselineMeta_cell_state_curated.rds")
-table(data$cell_state,data$sampleID)
-data=data[data$cell_state!="Doublet",]
-unique(data$cell_type_major_curated)
-table(data$cell_type_major_curated,data$sampleID)
-table(data$cell_state)
-immune=c("T cells","Myeloid cells","Plasma","B cells","Mast cells","Endothelial cells","Mesenchymal cells")
-Immune=data[data$cell_type_major_curated%in%immune,]
-table(Immune$cell_type_major_curated,Immune$sampleID)
+immune=c("Bcell","Myeloid","Tcell")
+Immune=data[data$cell_type%in%immune,]
+table(Immune$cell_type,Immune$sampleID)
 table(Immune$sampleID)
 #Immune <- Immune[!Immune$sampleID %in% c("1228_BO"), ] #"1404_BL","1512_BL"
 #Immune <- Immune[!Immune$sampleID %in% c("1404_BL"), ] # can include
@@ -267,7 +246,10 @@ meta=readRDS("E:/Projects/PREDIX_HER2/Multimodal/Data/Clin/PREDIX_HER2_clin_cura
 meta$patientID=as.character(meta$patientID)
 Immune_wide =left_join(Immune_wide ,meta,by="patientID")
 #colnames(tumor_cell_proportion_wide)=gsub(" cancer (Cell|cell|cells)", "", colnames(tumor_cell_proportion_wide))
-d=Immune_wide%>%select(c("Arm","Response","Mast cells")) # unique(data$cell_state[data$cell_type_major_curated%in%immune])
+d=Immune_wide%>%select(c("Arm","Response","APOC1_macrophages","CD8_Trm","CTLs","CXCR4_T","Cycling T","ECM_macrophages","LAM","Langerhans",          
+    "M1_macrophages","M2_macrophages","MARCO_macrophages","Mast cells","Memory B","NK","NKT","Naive B","Tfh","Th17","Treg","cDC1","cDC2")) 
+d=Immune_wide%>%select(c("Arm","Response","Mast cells","Treg")) 
+# unique(data$cell_state[data$cell_type_major_curated%in%immune])
 write.table(d,file="E:/Projects/PREDIX_HER2/Multimodal/Figures/SourceData/Fig6f.txt",quote = F,row.names =F,sep="\t")
 d <- reshape2::melt(d,id.vars=c("Arm","Response"))
 # change the contents of variable baseDir to the root analysis folder 
@@ -293,8 +275,52 @@ Fig3c <-
 Fig3c
 ggsave(Fig3c, file="E:/Projects/PREDIX_HER2/Multimodal/Figures/Figure6/Fig6f.pdf", width=4, height=4)
 
-
-
+###### stromal ######
+immune=c("Endothelial","Mesenchymal")
+Immune=data[data$cell_type%in%immune,]
+table(Immune$cell_type,Immune$sampleID)
+table(Immune$sampleID)
+#Immune <- Immune[!Immune$sampleID %in% c("1228_BO"), ] #"1404_BL","1512_BL"
+#Immune <- Immune[!Immune$sampleID %in% c("1404_BL"), ] # can include
+Immune_proportion <- Immune %>%
+  group_by(patientID, cell_state) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  group_by(patientID) %>%
+  mutate(proportion = count / sum(count)) %>%
+  ungroup()
+Immune_wide <- Immune_proportion %>%
+  select(patientID, cell_state, proportion) %>%
+  pivot_wider(names_from = cell_state, values_from = proportion, values_fill = 0)
+# read meta
+meta=readRDS("E:/Projects/PREDIX_HER2/Multimodal/Data/Clin/PREDIX_HER2_clin_curated.rds")
+meta$patientID=as.character(meta$patientID)
+Immune_wide =left_join(Immune_wide ,meta,by="patientID")
+d=Immune_wide%>%select(c("Arm","Response","Cycling","ECM-CAF","Inflammatory","Lymphatic",
+                         "PVLs","Vascular","iCAF","myCAF")) 
+# unique(data$cell_state[data$cell_type_major_curated%in%immune])
+write.table(d,file="E:/Projects/PREDIX_HER2/Multimodal/Figures/SourceData/Fig6f.txt",quote = F,row.names =F,sep="\t")
+d <- reshape2::melt(d,id.vars=c("Arm","Response"))
+# change the contents of variable baseDir to the root analysis folder 
+baseDir <- "E:/Projects/PREDIX_HER2/Multimodal/"
+# load directory structure downloaded from github site
+source (paste0(baseDir,"/Code/theme.R"))
+figure_font_size=12
+Fig3c <-
+  ggplot(d,aes(x=Arm,y=value,fill=Response))+
+  geom_boxplot(outlier.size = 0.2, width=0.8)+
+  facet_wrap(variable~.,scales="free_y",nrow=1)+
+  theme_manuscript(base_size = figure_font_size)+
+  scale_fill_pCR_RD(name="Treatment Response")+
+  stat_compare_means(aes(group=Response),label = "p.format", hide.ns = F,size=4,
+                     color="#000000", label.y.npc = 0.99)+
+  labs(y="tumor cell proportion",x="")+
+  theme(strip.background = element_blank(),
+        panel.grid.major.x  = element_blank(),
+        axis.line = element_blank(),
+        strip.text = element_text(size = figure_font_size),
+        panel.border = element_rect(colour = "black", fill=NA, size=0.8),
+        plot.margin = unit(c(0.5,0.2,0.2,0.5), "lines"))
+Fig3c
 
 #############################################################
 #######################Niche analysis########################
@@ -313,7 +339,7 @@ df$merged_niche=paste0("Niche",df$merged_niche)
 table(df$cell_type_major_curated,df$merged_niche)
 table(df$cell_state)
 df$cell_type_major_curated[df$cell_state%in%c("LumA_SC","LumB_SC",
-                               "Her2E_SC","Basal_SC")]="Tumor"
+                                              "Her2E_SC","Basal_SC")]="Tumor"
 table(df$merged_niche,df$sampleID)
 table(df$sampleID)
 
@@ -417,8 +443,8 @@ my_colors <- c("#1f78b4","#a6cee3","#fb9a99","#e31a1c", "#2CA02C", "#00FFC0", "#
 
 
 df$merged_niche=factor(df$merged_niche,levels = c("Niche0","Niche1","Niche2","Niche3","Niche4",
-                                                      "Niche10","Niche11","Niche14","Niche15",
-                                                      "Niche5","Niche6","Niche7","Niche8","Niche12",
+                                                  "Niche10","Niche11","Niche14","Niche15",
+                                                  "Niche5","Niche6","Niche7","Niche8","Niche12",
                                                   "Niche13","Niche16","Niche24","Niche41") ) # Immune/Stromal niche
 mytable=df %>%
   group_by(merged_niche,cell_state) %>%

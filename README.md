@@ -23,7 +23,7 @@ Data pre-processing
 -   Xenium: QC, data integration, cluster/subcuster
 -   Digital image: FLOCK
 
-Multi-omics metrics collection
+Multi-omics metrics curation
 -----------
 
 -  RNA-seq: DEG, transcriptomic metrics
