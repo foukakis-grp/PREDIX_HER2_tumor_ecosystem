@@ -219,7 +219,6 @@ library(tableone);library(tidyverse);library(caret);library(foreach);library(sta
 library(forestplot);library(ggpubr)
 source("E:/Projects/PREDIX_HER2/Multimodal/Code/Logistic_batch.R")
 clin=fread("E:/Projects/PREDIX_HER2/Multimodal/Data/Clin/PREDIX_HER2_clin_curated.txt")
-clin = clin[!clin$switch %in% c("Cycle 2","Cycle 3"),]
 cna=fread("E:/Projects/PREDIX_HER2/Multimodal/Data/CUTseq/GISTIC2/PREDIX_HER2_baseline/PREDIX_HER2_CUTseq_gistics2_baseline_gene_curated.txt")%>%as.data.frame()
 drivers=fread("E:/Projects/Collaboration/BEVPAC/CUTseq/genelist_nik-zainal-etal.tsv") 
 drivers=drivers$Gene
