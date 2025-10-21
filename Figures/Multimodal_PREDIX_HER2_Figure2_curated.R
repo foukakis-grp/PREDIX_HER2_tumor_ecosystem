@@ -48,10 +48,6 @@ library(reshape)
 CNA_long <- melt(CNA,id=c("sampleID"))%>%as.data.frame()
 CNA_long=CNA_long[CNA_long$value!="Neutral",]
 colnames(CNA_long)=c("Tumor_Sample_Barcode",'Hugo_Symbol',"Variant_Classification")
-#table(CNA_long$Variant_Classification)
-#counts <- table(CNA_long$Hugo_Symbol)
-#gene <- names(counts[counts >5])
-#drivers_cna=union(gene,drivers_mut)
 CNA_long=CNA_long[CNA_long$Hugo_Symbol%in%drivers_mut,]
 ## Merge mutation and CNA
 maf=rbind(maf,CNA_long,fill=TRUE)
@@ -59,12 +55,11 @@ maf[is.na(maf)]=1
 tail(maf)
 maf=as.data.frame(maf)
 ## maf2concoprint
+setDT(maf)
 data=maf2oncoprint(maf)
 ## TMB and genomic variables ##
 genomic=readRDS("E:/Projects/PREDIX_HER2/Multimodal/Data/Curated_metrics/genomic_metrics_PREDIX_HER2.rds")
 genomic=genomic[genomic$totalTMB!=0,]
-#https://rpubs.com/DarrenVan/876010
-c("#dc8e97","#e3d1db","#74a893","#ac9141","#5ac6e9","#ebce8e","#e5c06e","#7587b1","#c7deef","#e97371","#e1a4c6","#916ba6","#cb8f82","#7db3af","#d2e0ac")
 col <- c("Missense" = "#00A087FF","Truncating" = "#ac9141","In.frame"="#F39B7FFF","Silent" = "#916ba6",
          "Amplification"="#BC102B","Deletion"="#5385AC") #"Gain"="#DF989E","Loss"="#AEC4D6",
 
@@ -89,35 +84,12 @@ alter_fun <- list(
   Deletion = function(x, y, w, h) {grid.rect(x, y, w-unit(2, "pt"), h*0.33,gp = gpar(fill = col["Deletion"], col = NA))
   }
 )
-#colfunc <- colorRampPalette(c("white","black"))
-#drivers=read_excel("E:/Projects/PREDIX_HER2/CUTseq/data/genelist/NIHMS68344-supplement-Supplementary_Tables_1-21/nature17676-s3/Supplementary Table 14.Driver.Events.By.Mutation.Type.01052015.v2.xlsx",sheet=4)
-#drivers=unique(drivers$Gene)%>%as.character()
-#pathway=c("TP53","PIK3CA","PTEN","AKT1","MAPK","ERBB2","EGFR","NF1","KRAS","BRAF","MAP2K","ERBB3","ERBB4")
-#drivers=union(drivers,pathway)
-#drivers=intersect(drivers,gene)
 clinical_anno=readRDS("E:/Projects/PREDIX_HER2/Multimodal/Data/Clin/PREDIX_HER2_clin_curated.rds")
 clinical_anno=inner_join(clinical_anno,genomic,by='patientID')
 clinical_anno$log2TMB=as.numeric(log2(clinical_anno$totalTMB))
 clinical_anno=clinical_anno[order(clinical_anno$TREAT,-clinical_anno$log2TMB),]
 clinical_anno=clinical_anno[clinical_anno$patientID%in%unique(substr(colnames(data),9,12)),]
 sample_order=clinical_anno$sampleID
-# COSMIC signature
-patient_order=substr(sample_order,9,12)
-COSMIC=fread("E:/Projects/PREDIX_HER2/Multimodal/Data/Curated_metrics/genomic_metrics_PREDIX_HER2.txt")%>%as.data.frame()%>%
-  select(c("patientID","COSMIC.Signature.2","COSMIC.Signature.3","COSMIC.Signature.6","COSMIC.Signature.7","COSMIC.Signature.10",
-           "COSMIC.Signature.13","COSMIC.Signature.15"))
-COSMIC[,2:ncol(COSMIC)]=scale(COSMIC[,2:ncol(COSMIC)],center = T)
-rownames(COSMIC)=COSMIC$patientID;COSMIC$patientID=NULL
-COSMIC=t(COSMIC)
-# CIN
-CIN=fread("E:/Projects/PREDIX_HER2/Multimodal/Data/Curated_metrics/genomic_metrics_PREDIX_HER2.txt")%>%
-  select(c("patientID","CX1","CX2","CX3","CX4","CX5","CX9"))%>%as.data.frame()
-CIN[,2:ncol(CIN)]=scale(CIN[,2:ncol(CIN)],center = T)
-rownames(CIN)=CIN$patientID;CIN$patientID=NULL
-CIN=t(CIN)
-#table(clinical_anno$HER2_asCN,clinical_anno$pCR2020)
-#wilcox.test(CN_LOH_burden ~ pCR, data = clinical_anno[clinical_anno$TREAT=="Standard",])
-#boxplot(LOH_Del_burden ~ pCR, data = clinical_anno[clinical_anno$TREAT=="Experimentell",])
 ##heatmap
 gene_order=c("ERBB2","TP53","PIK3CA","MYC","GNAS","ZNF217","CCND1","NCOR1","MAP2K4","GATA3","FOXA1","CDH1","NF1",
              "ATM","MAP3K1","KRAS","EGFR","BCOR","ARID1A","XBP1","CCNE1","RUNX1","SPEN","CUX1","TBX3","BRCA2","CIC",

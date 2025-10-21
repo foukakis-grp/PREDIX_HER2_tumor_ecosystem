@@ -29,7 +29,6 @@ cox.test <- coxph(Surv(EFS.time,EFS.status)~as.factor(Arm)+as.factor(ER)+as.fact
 ShowRegTable(cox.test)
 (test.ph <- cox.zph(cox.test))
 
-
 #Fig.a2
 library(ComplexUpset);library(ggvenn);library(ggsci);library("scales");library(ggplot2);library(readxl);library(data.table)
 show_col(pal_npg("nrc")(10))
@@ -111,38 +110,3 @@ set.seed(123)
 mat = matrix(rnorm(80, 2), 8, 197)
 Heatmap(mat, cluster_columns=FALSE,top_annotation = ha)
 # 11X6 P
-
-#Upset
-#https://krassowski.github.io/complex-upset/articles/Examples_R.html
-set_size = function(w, h, factor=1.5) {
-  s = 1 * factor
-  options(
-    repr.plot.width=w * s,
-    repr.plot.height=h * s,
-    repr.plot.res=100 / factor,
-    jupyter.plot_mimetypes='image/png',
-    jupyter.plot_scale=1
-  )
-}
-
-set_size(5, 3)
-upset(
-  data, id,
-  min_size=1,
-  width_ratio=0.5,
-  set_sizes=(
-    upset_set_size(
-      geom=geom_bar(
-        aes(fill=Arm, x=group),
-        width=0.5),
-      position='right',
-    )
-  ),
-  guides='over'
-)
-
-# color Experimentall: #91D1C2FF Standard: #8491B4FF; landscape 6x4
-
-
-
-
