@@ -19,7 +19,7 @@ Data pre-processing
 -   RNA-seq: nf-core ranseq
 -   WES: nf-core sarek/hlatyping, PureCN best practices, GISTIC2.0, HLALOH, pVACseq, TcellExtrect  
 -   CUT-seq: GATK copy number pipeline, GISTIC2.0
--   Proteomics: QC 
+-   Proteomics: data processing, quality control, differential abundance analysis 
 -   Xenium: QC, data integration, cluster/subcuster
 -   Digital image: FLOCK
 

@@ -43,7 +43,8 @@ Metadata_noRep <- Metadata %>%
   ungroup()
 
 ## Save
-#saveRDS(Metadata_noRep, file = "processed/Metadata_Predix_pretherapy_V6_NoReps.rds")
+saveRDS(Metadata_noRep, file = "processed/Metadata_Predix_pretherapy_V6_NoReps.rds")
+write_tsv(Metadata_noRep, file = "processed/Metadata_Predix_pretherapy_V6_NoReps.tsv")
 
 # Adjust quant data
 
@@ -74,8 +75,10 @@ Quant_output_list <- lapply(Quant_list, function(Quant_temp){
 ## Save output
 
 saveRDS(Quant_output_list[["noCombat"]], file = "processed/Protein_Quant_Predix_pretherapy_wide_V6_1_NoComBat_NoReps_MedCent.rds")
+write_tsv(Quant_output_list[["noCombat"]] %>% rownames_to_column(var = "Gene_name"), file = "processed/Protein_Quant_Predix_pretherapy_wide_V6_1_NoComBat_NoReps_MedCent.tsv")
 
 saveRDS(Quant_output_list[["Combat"]], file = "processed/Protein_Quant_Predix_pretherapy_wide_V6_2_ComBat_NoReps_MedCent.rds")
+write_tsv(Quant_output_list[["Combat"]] %>% rownames_to_column(var = "Gene_name"), file = "processed/Protein_Quant_Predix_pretherapy_wide_V6_2_ComBat_NoReps_MedCent.tsv")
 
 
 # QC plot: batch effect correction -----------------------------------------------------------------
