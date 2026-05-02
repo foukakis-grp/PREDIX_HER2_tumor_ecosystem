@@ -1,8 +1,8 @@
-# 🧬 Multi-omic Profiling of HER2-Positive Breast Cancer
+# 🧬 Multimodal Profiling of HER2-Positive Breast Cancer
 
 This repository contains the code and workflows used for analyses presented in the manuscript:  
 
-> **“Multi-omic Profiling Reveals Predictive Biomarkers of Response to Antibody-Drug Conjugates in HER2-Positive Breast Cancer.”**
+> **“Multimodal Profiling Reveals Predictive Biomarkers of Response to Antibody-Drug Conjugates in HER2-Positive Breast Cancer.”**
 
 ---
 
